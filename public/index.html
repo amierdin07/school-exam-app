@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Al Ummah Exam - Aplikasi Ujian Sekolah (Anti-Cheat)</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS Library for Excel Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- html2pdf Library for Direct PDF Downloads -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Background Glow Effects -->
+  <div class="glow-bg">
+    <div class="glow-sphere bubble1"></div>
+    <div class="glow-sphere bubble2"></div>
+  </div>
+
+  <div id="app" class="app-container">
+    
+    <!-- ================= NAVBAR ================= -->
+    <header class="main-header no-print">
+      <div class="logo" onclick="handleLogout()" style="cursor: pointer;">
+        <i class="fa-solid fa-graduation-cap header-icon"></i>
+        <span>Al Ummah Exam<span class="logo-dot">.</span></span>
+      </div>
+      <div id="nav-actions" class="nav-actions">
+        <!-- Dynamic content: name, role & logout -->
+      </div>
+    </header>
+
+    <main class="content-wrapper">
+      
+      <!-- ================= 1. ROLES/CHOICE SCREEN ================= -->
+      <section id="screen-choice" class="screen active">
+        <div class="welcome-box">
+          <h1>Selamat Datang di <span class="gradient-text">Al Ummah Exam</span></h1>
+          <p>Portal ujian sekolah digital yang aman, praktis, dan bebas kecurangan.</p>
+          <div class="role-selector">
+            <button class="role-card btn-guru" onclick="openLoginScreen('admin')">
+              <div class="card-icon"><i class="fa-solid fa-user-shield"></i></div>
+              <h3>Masuk sebagai Admin</h3>
+              <p>Kelola kelas, daftarkan guru, mapel, dan buat akun siswa.</p>
+            </button>
+            <button class="role-card btn-guru" onclick="openLoginScreen('teacher')">
+              <div class="card-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <h3>Masuk sebagai Guru</h3>
+              <p>Kelola ujian, buat bank soal, dan pantau hasil real-time.</p>
+            </button>
+            <button class="role-card btn-siswa" onclick="openLoginScreen('student')">
+              <div class="card-icon"><i class="fa-solid fa-user-pen"></i></div>
+              <h3>Masuk sebagai Siswa</h3>
+              <p>Login menggunakan akun siswa Anda untuk mulai ujian.</p>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. UNIVERSAL LOGIN SCREEN ================= -->
+      <section id="screen-login" class="screen">
+        <div class="form-container">
+          <button class="btn-back" onclick="switchScreen('screen-choice')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+          <h2>Login <span id="login-title-role" class="gradient-text">User</span></h2>
+          <p class="subtitle" id="login-subtitle-desc">Masuk ke ruang kerja Anda</p>
+          <form id="form-login" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="username"><i class="fa-solid fa-user"></i> Username</label>
+              <input type="text" id="username" placeholder="Masukkan username" required>
+            </div>
+            <div class="form-group">
+              <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+              <input type="password" id="password" placeholder="Masukkan password" required>
+            </div>
+            <button type="submit" class="btn-primary btn-block">Masuk <i class="fa-solid fa-right-to-bracket"></i></button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= 3. ADMIN DASHBOARD SCREEN ================= -->
+      <section id="screen-admin-dashboard" class="screen">
+        <div class="dashboard-header">
+          <div>
+            <h2>Dashboard <span class="gradient-text">Administrator</span></h2>
+            <p>Kelola kelas, akun guru, akun siswa, dan pantau ujian aktif</p>
+          </div>
+        </div>
+
+        <div class="admin-layout">
+          <!-- Sidebar Tabs -->
+          <div class="admin-sidebar">
+            <button class="admin-tab-btn active" id="tab-classes" onclick="switchAdminTab('classes')"><i class="fa-solid fa-school"></i> Kelola Kelas</button>
+            <button class="admin-tab-btn" id="tab-teachers" onclick="switchAdminTab('teachers')"><i class="fa-solid fa-chalkboard-user"></i> Kelola Guru</button>
+            <button class="admin-tab-btn" id="tab-students" onclick="switchAdminTab('students')"><i class="fa-solid fa-users"></i> Kelola Siswa</button>
+            <button class="admin-tab-btn" id="tab-monitor" onclick="switchAdminTab('monitor')"><i class="fa-solid fa-desktop"></i> Pantau Ujian</button>
+<button class="admin-tab-btn" id="tab-settings" onclick="switchAdminTab('settings')"><i class="fa-solid fa-gear"></i> Pengaturan</button>
+          </div>
+
+          <!-- Main Panel Content -->
+          <div class="admin-main-panel">
+            <!-- TAB: CLASSES -->
+            <div id="panel-classes" class="admin-panel-content active">
+              <div class="panel-section">
+                <h3>Tambah Kelas</h3>
+                <form id="form-add-class" onsubmit="handleAddClass(event)" class="form-inline">
+                  <div class="form-group flex-1">
+                    <input type="text" id="class-name" placeholder="Contoh: XII IPA 1, X RPL 3" required>
+                  </div>
+                  <button type="submit" class="btn-primary">Tambah <i class="fa-solid fa-plus"></i></button>
+                </form>
+              </div>
+              <div class="panel-section">
+                <h3>Daftar Kelas</h3>
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Nama Kelas</th>
+                        <th style="width: 100px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-classes-list">
+                      <!-- Dinamis -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: TEACHERS -->
+            <div id="panel-teachers" class="admin-panel-content">
+              <div class="panel-section" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px;">
+                <button class="btn-secondary" onclick="downloadExcelTemplate('teacher')"><i class="fa-solid fa-file-excel" style="color:var(--color-success);"></i> Unduh Templat Guru (Excel)</button>
+                <button class="btn-success" onclick="document.getElementById('import-teachers-file').click()"><i class="fa-solid fa-file-import"></i> Impor Guru via Excel</button>
+                <input type="file" id="import-teachers-file" style="display:none;" accept=".xlsx, .xls" onchange="handleExcelImport(event, 'teacher')">
+              </div>
+              <div class="panel-grid">
+                <!-- Left: Form -->
+                <div class="panel-section">
+                  <h3>Tambah Akun Guru</h3>
+                  <form id="form-add-teacher" onsubmit="handleAddTeacher(event)">
+                    <div class="form-group">
+                      <label>Nama Lengkap</label>
+                      <input type="text" id="teacher-name" placeholder="Contoh: Budi Santoso, S.Pd." required>
+                    </div>
+                    <div class="form-group">
+                      <label>Mata Pelajaran (Mapel)</label>
+                      <input type="text" id="teacher-subject" placeholder="Contoh: Matematika, Fisika" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Username</label>
+                      <input type="text" id="teacher-username" placeholder="Username untuk login" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Password</label>
+                      <input type="password" id="teacher-password" placeholder="Password guru" required>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Simpan Akun Guru <i class="fa-solid fa-check"></i></button>
+                  </form>
+                </div>
+                <!-- Right: List -->
+                <div class="panel-section flex-2">
+                  <h3>Daftar Akun Guru & Mapel</h3>
+                  <div class="table-responsive">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Nama Guru</th>
+                          <th>Mata Pelajaran</th>
+                          <th>Username</th>
+                          <th>Password</th>
+                          <th style="width: 80px;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="admin-teachers-list">
+                        <!-- Dinamis -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: STUDENTS -->
+            <div id="panel-students" class="admin-panel-content">
+              <div class="panel-section" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px;">
+                <button class="btn-secondary" onclick="downloadExcelTemplate('student')"><i class="fa-solid fa-file-excel" style="color:var(--color-success);"></i> Unduh Templat Siswa (Excel)</button>
+                <button class="btn-success" onclick="document.getElementById('import-students-file').click()"><i class="fa-solid fa-file-import"></i> Impor Siswa via Excel</button>
+                <input type="file" id="import-students-file" style="display:none;" accept=".xlsx, .xls" onchange="handleExcelImport(event, 'student')">
+              </div>
+              <div class="panel-grid">
+                <!-- Left: Form -->
+                <div class="panel-section">
+                  <h3>Tambah Akun Siswa</h3>
+                  <form id="form-add-student" onsubmit="handleAddStudent(event)">
+                    <div class="form-group">
+                      <label>Nama Siswa</label>
+                      <input type="text" id="student-fullname" placeholder="Contoh: Adi Wijaya" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Kelas</label>
+                      <select id="student-class-select" required>
+                        <option value="" disabled selected>-- Pilih Kelas --</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Username</label>
+                      <input type="text" id="student-username" placeholder="Username untuk login" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Password</label>
+                      <input type="password" id="student-password" placeholder="Password siswa" required>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Simpan Akun Siswa <i class="fa-solid fa-check"></i></button>
+                  </form>
+                </div>
+                <!-- Right: List -->
+                <div class="panel-section flex-2">
+                  <h3>Daftar Akun Siswa</h3>
+                  
+                  <!-- Filter Kelas Dropdown -->
+                  <div class="form-group" style="margin-bottom: 25px; max-width: 300px;">
+                    <label for="admin-student-class-filter"><i class="fa-solid fa-filter"></i> Pilih Kelas:</label>
+                    <select id="admin-student-class-filter" onchange="loadAdminStudentsFiltered()">
+                      <option value="" selected>-- Pilih Kelas --</option>
+                    </select>
+                  </div>
+
+                  <!-- Container Tabel Siswa -->
+                  <div id="admin-student-table-container" style="display:none;">
+                    <div class="table-responsive">
+                      <table class="data-table">
+                        <thead>
+                          <tr>
+                            <th>Nama Siswa</th>
+                            <th>Kelas</th>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th style="width: 80px;">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody id="admin-students-list">
+                          <!-- Dinamis -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <!-- Empty Message -->
+                  <div id="admin-student-empty-msg" style="text-align: center; color: var(--text-muted); padding: 50px 0;">
+                    <i class="fa-solid fa-school" style="font-size: 2.5rem; margin-bottom: 15px; display: block; color: var(--text-muted);"></i>
+                    Silakan pilih kelas terlebih dahulu untuk melihat daftar siswa.
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: MONITOR (ADMIN ACTIVE EXAMS) -->
+            <div id="panel-monitor" class="admin-panel-content">
+              <div class="panel-section">
+                <h3>Ujian Kelas yang Sedang Aktif</h3>
+                <p class="subtitle" style="margin-bottom:20px;">Daftar ujian yang sedang berjalan di sekolah saat ini</p>
+                <div id="admin-active-exams-list" class="exams-grid">
+                  <!-- Dinamis -->
+                </div>
+              </div>
+            </div>
+<!-- TAB: SETTINGS (ADMIN) -->
+<div id="panel-settings" class="admin-panel-content">
+  <div class="panel-section">
+    <h3>Pengaturan Sistem</h3>
+    <p class="subtitle" style="margin-bottom: 20px;">Konfigurasi kunci API dan setelan aplikasi lainnya.</p>
+    <form id="form-settings" onsubmit="handleSettingsSave(event)" style="display: flex; flex-direction: column; gap: 15px; max-width: 600px;">
+      <div class="form-group">
+        <label for="gemini-keys" style="font-weight:600; margin-bottom: 5px; display:block;"><i class="fa-solid fa-key"></i> Gemini API Keys (Satu per baris)</label>
+        <p class="subtitle" style="margin-top: 2px; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+          Masukkan kunci API Gemini free tier. Jika salah satu kunci kehabisan kuota (rate limit), sistem otomatis menggunakan kunci berikutnya.
+        </p>
+        <textarea id="gemini-keys" rows="5" placeholder="Masukkan API Key Gemini...&#10;Contoh:&#10;AIzaSy...&#10;AIzaSy..." required style="width: 100%; padding: 10px; border-radius: var(--border-radius-md); background: rgba(0,0,0,0.2); color: var(--text-primary); border: 1px solid var(--panel-border); font-family: monospace; resize: vertical;"></textarea>
+      </div>
+      <div>
+        <button type="submit" class="btn-primary" style="padding: 10px 20px;"><i class="fa-solid fa-save"></i> Simpan Pengaturan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. SISWA DASHBOARD SCREEN ================= -->
+      <section id="screen-student-dashboard" class="screen">
+        <div class="dashboard-header">
+          <div>
+            <h2>Dashboard <span class="gradient-text">Siswa</span></h2>
+            <p id="student-dashboard-welcome">Selamat datang di sistem ujian</p>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Daftar Ujian yang Sedang Aktif</h3>
+          <div id="student-active-exams-list" class="exams-grid">
+            <!-- Dinamis -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. GURU DASHBOARD SCREEN ================= -->
+      <section id="screen-guru-dashboard" class="screen">
+        <div class="dashboard-header">
+          <div>
+            <h2>Dashboard <span class="gradient-text">Ujian Guru</span></h2>
+            <p>Kelola bank soal dan jalankan ujian kelas Anda</p>
+          </div>
+          <button class="btn-primary" onclick="openCreateExamModal()"><i class="fa-solid fa-plus"></i> Buat Ujian Baru</button>
+        </div>
+
+        <div id="exams-list" class="exams-grid">
+          <!-- Dinamis -->
+        </div>
+      </section>
+
+      <!-- ================= 6. GURU EDIT QUESTIONS SCREEN ================= -->
+      <section id="screen-edit-questions" class="screen">
+        <div class="dashboard-header">
+          <button class="btn-back-link" onclick="backFromQuestions()"><i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard</button>
+          <h2 id="edit-questions-title">Kelola Soal Ujian: <span class="gradient-text">-</span></h2>
+        </div>
+
+        <div class="panel-section" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
+          <button class="btn-secondary" onclick="openCopyPasteModal()"><i class="fa-solid fa-paste"></i> Salin-Tempel Teks (MS Word)</button>
+          <button class="btn-secondary" onclick="downloadExcelTemplate('question')"><i class="fa-solid fa-file-excel" style="color:var(--color-success);"></i> Unduh Templat Soal (Excel)</button>
+          <button class="btn-success" onclick="document.getElementById('import-questions-file').click()"><i class="fa-solid fa-file-import"></i> Impor Soal via Excel</button>
+          <input type="file" id="import-questions-file" style="display:none;" accept=".xlsx, .xls" onchange="handleExcelImport(event, 'question')">
+        </div>
+
+        <div class="question-builder-layout">
+          <!-- Question Form -->
+          <div class="question-form-card">
+            <h3><span id="question-form-mode">Tambah</span> Soal</h3>
+            <form id="form-question" onsubmit="handleSaveQuestion(event)">
+              <input type="hidden" id="edit-q-index" value="">
+              
+              <!-- Tipe Soal Dropdown -->
+              <div class="form-group">
+                <label for="q-type">Tipe Soal</label>
+                <select id="q-type" onchange="toggleQuestionTypeInputs()" required>
+                  <option value="pg">Pilihan Ganda</option>
+                  <option value="pg_kompleks">Pilihan Ganda Kompleks</option>
+                  <option value="jodohkan">Mencocokkan Soal & Jawaban</option>
+                  <option value="uraian">Uraian</option>
+                </select>
+              </div>
+
+              <!-- Teks Soal -->
+              <div class="form-group">
+                <label for="q-text">Pertanyaan</label>
+                <textarea id="q-text" rows="3" placeholder="Masukkan soal ujian..." required></textarea>
+                
+                <!-- Unggah Gambar Soal -->
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                  <input type="file" id="q-image-input" accept="image/*" onchange="previewImage(this, 'q-image-preview')" style="display:none;">
+                  <button type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="document.getElementById('q-image-input').click()"><i class="fa-solid fa-image"></i> Unggah Gambar Soal</button>
+                  <button type="button" class="btn-danger" id="btn-remove-q-image" onclick="removeImage('q-image-input', 'q-image-preview')" style="display:none; padding: 6px 10px; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i></button>
+                  <img id="q-image-preview" src="" style="max-width: 100px; max-height: 80px; border-radius: 4px; display: none; border: 1px solid var(--panel-border);">
+                </div>
+              </div>
+
+              <!-- KONTINER PILIHAN GANDA / PILIHAN GANDA KOMPLEKS -->
+              <div id="container-pg-inputs" class="q-type-section">
+                <div class="options-inputs">
+                  <div class="form-group">
+                    <label for="opt-a">Pilihan A</label>
+                    <input type="text" id="opt-a">
+                    <!-- Unggah Gambar Opsi A -->
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                      <input type="file" id="opt-a-image-input" accept="image/*" onchange="previewImage(this, 'opt-a-image-preview')" style="display:none;">
+                      <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 0.75rem;" onclick="document.getElementById('opt-a-image-input').click()"><i class="fa-solid fa-image"></i> Gambar A</button>
+                      <button type="button" class="btn-danger" id="btn-remove-opt-a-image" onclick="removeImage('opt-a-image-input', 'opt-a-image-preview')" style="display:none; padding: 5px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                      <img id="opt-a-image-preview" src="" style="max-width: 60px; max-height: 45px; border-radius: 4px; display: none; border: 1px solid var(--panel-border);">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="opt-b">Pilihan B</label>
+                    <input type="text" id="opt-b">
+                    <!-- Unggah Gambar Opsi B -->
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                      <input type="file" id="opt-b-image-input" accept="image/*" onchange="previewImage(this, 'opt-b-image-preview')" style="display:none;">
+                      <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 0.75rem;" onclick="document.getElementById('opt-b-image-input').click()"><i class="fa-solid fa-image"></i> Gambar B</button>
+                      <button type="button" class="btn-danger" id="btn-remove-opt-b-image" onclick="removeImage('opt-b-image-input', 'opt-b-image-preview')" style="display:none; padding: 5px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                      <img id="opt-b-image-preview" src="" style="max-width: 60px; max-height: 45px; border-radius: 4px; display: none; border: 1px solid var(--panel-border);">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="opt-c">Pilihan C</label>
+                    <input type="text" id="opt-c">
+                    <!-- Unggah Gambar Opsi C -->
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                      <input type="file" id="opt-c-image-input" accept="image/*" onchange="previewImage(this, 'opt-c-image-preview')" style="display:none;">
+                      <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 0.75rem;" onclick="document.getElementById('opt-c-image-input').click()"><i class="fa-solid fa-image"></i> Gambar C</button>
+                      <button type="button" class="btn-danger" id="btn-remove-opt-c-image" onclick="removeImage('opt-c-image-input', 'opt-c-image-preview')" style="display:none; padding: 5px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                      <img id="opt-c-image-preview" src="" style="max-width: 60px; max-height: 45px; border-radius: 4px; display: none; border: 1px solid var(--panel-border);">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="opt-d">Pilihan D</label>
+                    <input type="text" id="opt-d">
+                    <!-- Unggah Gambar Opsi D -->
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                      <input type="file" id="opt-d-image-input" accept="image/*" onchange="previewImage(this, 'opt-d-image-preview')" style="display:none;">
+                      <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 0.75rem;" onclick="document.getElementById('opt-d-image-input').click()"><i class="fa-solid fa-image"></i> Gambar D</button>
+                      <button type="button" class="btn-danger" id="btn-remove-opt-d-image" onclick="removeImage('opt-d-image-input', 'opt-d-image-preview')" style="display:none; padding: 5px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                      <img id="opt-d-image-preview" src="" style="max-width: 60px; max-height: 45px; border-radius: 4px; display: none; border: 1px solid var(--panel-border);">
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Kunci Jawaban Single Choice (PG) -->
+                <div class="form-group" id="container-key-single">
+                  <label for="q-correct">Kunci Jawaban</label>
+                  <select id="q-correct">
+                    <option value="" disabled selected>-- Pilih Kunci Jawaban --</option>
+                    <option value="A">Pilihan A</option>
+                    <option value="B">Pilihan B</option>
+                    <option value="C">Pilihan C</option>
+                    <option value="D">Pilihan D</option>
+                  </select>
+                </div>
+
+                <!-- Kunci Jawaban Multi Choice (PG Kompleks) -->
+                <div class="form-group" id="container-key-multi" style="display:none;">
+                  <label>Kunci Jawaban (Pilih Semua yang Benar):</label>
+                  <div class="checkbox-keys-group" style="display: flex; gap: 20px; margin-top: 8px;">
+                    <label style="cursor:pointer;"><input type="checkbox" name="q-correct-multi" value="A"> Opsi A</label>
+                    <label style="cursor:pointer;"><input type="checkbox" name="q-correct-multi" value="B"> Opsi B</label>
+                    <label style="cursor:pointer;"><input type="checkbox" name="q-correct-multi" value="C"> Opsi C</label>
+                    <label style="cursor:pointer;"><input type="checkbox" name="q-correct-multi" value="D"> Opsi D</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KONTINER MENJOCOKKAN SOAL & JAWABAN (JODOHKAN) -->
+              <div id="container-jodohkan-inputs" class="q-type-section" style="display:none;">
+                <label style="font-weight: 600; display: block; margin-bottom: 10px; color: var(--secondary-color);"><i class="fa-solid fa-link"></i> Pasangan Mencocokkan (Kiri & Kanan):</label>
+                <div class="jodohkan-rows" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                  <div class="jodohkan-row" style="display: flex; gap: 10px;">
+                    <input type="text" placeholder="Baris Kiri 1 (misal: Prancis)" class="jodohkan-left" style="flex:1;">
+                    <input type="text" placeholder="Baris Kanan 1 (misal: Paris)" class="jodohkan-right" style="flex:1;">
+                  </div>
+                  <div class="jodohkan-row" style="display: flex; gap: 10px;">
+                    <input type="text" placeholder="Baris Kiri 2" class="jodohkan-left" style="flex:1;">
+                    <input type="text" placeholder="Baris Kanan 2" class="jodohkan-right" style="flex:1;">
+                  </div>
+                  <div class="jodohkan-row" style="display: flex; gap: 10px;">
+                    <input type="text" placeholder="Baris Kiri 3" class="jodohkan-left" style="flex:1;">
+                    <input type="text" placeholder="Baris Kanan 3" class="jodohkan-right" style="flex:1;">
+                  </div>
+                  <div class="jodohkan-row" style="display: flex; gap: 10px;">
+                    <input type="text" placeholder="Baris Kiri 4" class="jodohkan-left" style="flex:1;">
+                    <input type="text" placeholder="Baris Kanan 4" class="jodohkan-right" style="flex:1;">
+                  </div>
+                  <div class="jodohkan-row" style="display: flex; gap: 10px;">
+                    <input type="text" placeholder="Baris Kiri 5" class="jodohkan-left" style="flex:1;">
+                    <input type="text" placeholder="Baris Kanan 5" class="jodohkan-right" style="flex:1;">
+                  </div>
+                </div>
+
+                <label style="font-weight: 600; display: block; margin-bottom: 5px; color: var(--color-warning);"><i class="fa-solid fa-shuffle"></i> Pilihan Jawaban Pengecoh Tambahan (Opsional):</label>
+                <div class="jodohkan-distractors" style="display: flex; flex-direction: column; gap: 8px;">
+                  <input type="text" placeholder="Pengecoh Kanan 1 (misal: Jakarta)" class="jodohkan-distractor">
+                  <input type="text" placeholder="Pengecoh Kanan 2" class="jodohkan-distractor">
+                  <input type="text" placeholder="Pengecoh Kanan 3" class="jodohkan-distractor">
+                </div>
+              </div>
+
+              <!-- KONTINER URAIAN -->
+              <div id="container-uraian-inputs" class="q-type-section" style="display:none;">
+                <div style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; background: rgba(255,255,255,0.02); padding: 15px; border-radius: var(--border-radius-md); border: 1px solid var(--panel-border); margin-bottom: 15px;">
+                  <p style="margin-bottom: 8px;"><i class="fa-solid fa-circle-info" style="color:var(--secondary-color);"></i> <strong>Info Uraian:</strong></p>
+                  <span>Siswa akan diberikan kotak teks besar untuk mengetikkan jawaban panjang mereka. Masukkan kunci jawaban atau kriteria penilaian di bawah ini agar AI dapat memberikan rekomendasi nilai secara akurat.</span>
+                </div>
+                <div class="form-group">
+                  <label for="q-correct-uraian"><i class="fa-solid fa-key"></i> Kunci Jawaban / Kriteria Penilaian Uraian</label>
+                  <textarea id="q-correct-uraian" rows="3" placeholder="Masukkan poin penting atau pedoman nilai (contoh: Jawaban harus mengandung kata gravitasi, massa, dan jarak)..." style="width: 100%; padding: 10px; border-radius: var(--border-radius-md); background: rgba(0,0,0,0.2); color: var(--text-primary); border: 1px solid var(--panel-border); resize: vertical;"></textarea>
+                </div>
+              </div>
+
+              <!-- Bobot Nilai (Points) -->
+              <div class="form-group" style="margin-top: 20px;">
+                <label for="q-points"><i class="fa-solid fa-star"></i> Bobot Nilai Soal</label>
+                <input type="number" id="q-points" min="0" step="0.1" value="1" style="max-width: 120px;" required>
+              </div>
+
+              <div class="form-actions-inline" style="margin-top: 20px;">
+                <button type="submit" id="btn-save-q" class="btn-primary">Simpan Soal <i class="fa-solid fa-check"></i></button>
+                <button type="button" id="btn-cancel-edit-q" class="btn-secondary" style="display:none;" onclick="resetQuestionForm()">Batal</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Questions List -->
+          <div class="questions-list-card">
+            <h3>Daftar Pertanyaan (<span id="q-count">0</span>)</h3>
+            <div id="questions-list-container" class="q-list-container">
+              <!-- Dinamis -->
+            </div>
+            <div class="publish-section">
+              <button class="btn-success btn-block" onclick="saveAllQuestionsToServer()"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan Semua Soal ke Server</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 7. GURU EXAM MONITORING SCREEN ================= -->
+      <section id="screen-exam-monitor" class="screen">
+        <div class="monitor-header">
+          <button class="btn-back-link no-print" onclick="backFromMonitor()"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+          <h2>Pemantauan Real-Time: <span id="monitor-title" class="gradient-text">-</span></h2>
+          <div class="monitor-controls">
+            <span class="exam-status-tag status-active" id="monitor-status-tag"><i class="fa-solid fa-spinner fa-spin"></i> Sedang Berlangsung</span>
+            <button class="btn-danger" id="btn-stop-exam" onclick="finishExamFromMonitor()"><i class="fa-solid fa-circle-stop"></i> Akhiri Ujian</button>
+          </div>
+        </div>
+
+        <div class="monitor-grid">
+          <!-- Stats Card -->
+          <div class="monitor-stats-card no-print">
+            <div class="stat-box">
+              <h4 class="stat-label">Total Peserta</h4>
+              <p class="stat-val" id="monitor-total-students">0</p>
+            </div>
+            <div class="stat-box">
+              <h4 class="stat-label">Mengerjakan</h4>
+              <p class="stat-val text-info" id="monitor-active-students">0</p>
+            </div>
+            <div class="stat-box">
+              <h4 class="stat-label">Selesai</h4>
+              <p class="stat-val text-success" id="monitor-done-students">0</p>
+            </div>
+            <div class="stat-box">
+              <h4 class="stat-label">Dicoret/Curang</h4>
+              <p class="stat-val text-danger" id="monitor-cheat-students">0</p>
+            </div>
+          </div>
+
+          <!-- Tombol Ekspor Nilai (Excel / PDF) -->
+          <div class="no-print" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 5px;">
+            <button class="btn-secondary" onclick="exportLeaderboardToExcel()"><i class="fa-solid fa-file-excel" style="color:var(--color-success);"></i> Ekspor Excel</button>
+            <button class="btn-secondary" onclick="exportLeaderboardToPDF()"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Ekspor PDF</button>
+          </div>
+
+          <div class="monitor-tables-layout">
+            <!-- Peringkat Nilai Real-time (Leaderboard) -->
+            <div class="monitor-table-card flex-1">
+              <h3 class="gradient-text no-print"><i class="fa-solid fa-trophy"></i> Peringkat Nilai Siswa (Leaderboard)</h3>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Peringkat</th>
+                      <th>Nama Siswa</th>
+                      <th>Kelas</th>
+                      <th>Percobaan</th>
+                      <th>Nilai Terbaik</th>
+                    </tr>
+                  </thead>
+                  <tbody id="student-leaderboard-list">
+                    <!-- Dinamis -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Log Pelanggaran Real-time (Hidden in print) -->
+            <div class="monitor-table-card flex-1 no-print">
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> Log Aktivitas & Pelanggaran</h3>
+              <div class="table-responsive">
+                <table class="data-table">
+                   <thead>
+                    <tr>
+                      <th>Nama Siswa</th>
+                      <th>Percob.</th>
+                      <th>Status</th>
+                      <th>Keluar Layar</th>
+                      <th>Detail Pelanggaran</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="student-monitor-list">
+                    <!-- Dinamis -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= 8. SISWA EXAM AREA SCREEN ================= -->
+      <section id="screen-student-exam" class="screen">
+        <div class="exam-header-bar">
+          <div class="exam-meta-info">
+            <h2 id="student-exam-title">-</h2>
+            <span class="student-profile" id="student-profile-display"><i class="fa-solid fa-user"></i> Nama (Kelas)</span>
+          </div>
+          <div class="timer-box" id="exam-timer">
+            <i class="fa-regular fa-clock"></i> <span id="timer-val">00:00:00</span>
+          </div>
+        </div>
+
+        <div class="exam-main-layout">
+          <!-- Questions Navigation -->
+          <div class="exam-nav-card">
+            <h3>Navigasi Soal (Percobaan #<span id="student-attempt-num">1</span>)</h3>
+            <div id="exam-nav-grid" class="exam-nav-grid">
+              <!-- Dinamis -->
+            </div>
+            <div class="cheat-indicator">
+              <h4>Batas Toleransi Curang:</h4>
+              <span class="violations-badge danger" style="padding: 4px 10px; border-radius: 6px; font-weight: 600; display: inline-block; margin-top: 5px; font-size: 0.85rem;"><i class="fa-solid fa-ban"></i> 0 Kali Toleransi</span>
+              <p class="violation-warning-text"><i class="fa-solid fa-triangle-exclamation"></i> Ujian otomatis terkunci jika keluar halaman 1 kali saja!</p>
+            </div>
+          </div>
+
+          <!-- Active Question Area -->
+          <div class="exam-question-card">
+            <div class="question-header">
+              <span class="q-number-tag">Pertanyaan <span id="active-q-num">1</span></span>
+            </div>
+            <p class="question-text-display" id="active-q-text">-</p>
+            <img id="active-q-image" class="q-image-display" style="display:none;">
+            
+            <div class="options-list">
+              <label class="option-item" for="ans-A">
+                <input type="radio" name="student-ans" id="ans-A" value="A">
+                <span class="option-lbl">A</span>
+                <span class="option-text" id="active-opt-a">-</span>
+              </label>
+              <label class="option-item" for="ans-B">
+                <input type="radio" name="student-ans" id="ans-B" value="B">
+                <span class="option-lbl">B</span>
+                <span class="option-text" id="active-opt-b">-</span>
+              </label>
+              <label class="option-item" for="ans-C">
+                <input type="radio" name="student-ans" id="ans-C" value="C">
+                <span class="option-lbl">C</span>
+                <span class="option-text" id="active-opt-c">-</span>
+              </label>
+              <label class="option-item" for="ans-D">
+                <input type="radio" name="student-ans" id="ans-D" value="D">
+                <span class="option-lbl">D</span>
+                <span class="option-text" id="active-opt-d">-</span>
+              </label>
+            </div>
+
+            <div class="exam-actions">
+              <button class="btn-secondary" id="btn-prev-q" onclick="navigateQuestion(-1)"><i class="fa-solid fa-chevron-left"></i> Sebelumnya</button>
+              <button class="btn-primary" id="btn-next-q" onclick="navigateQuestion(1)">Selanjutnya <i class="fa-solid fa-chevron-right"></i></button>
+              <button class="btn-success" id="btn-submit-exam" onclick="submitExamConfirmation()" style="display:none;"><i class="fa-solid fa-paper-plane"></i> Kumpulkan Ujian</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 9. EXAM COMPLETE / DISQUALIFIED SCREEN ================= -->
+      <section id="screen-exam-result" class="screen">
+        <div class="result-card">
+          <div id="result-icon-container" class="result-icon success">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h2 id="result-title">Ujian Selesai!</h2>
+          <p id="result-message">Terima kasih telah mengerjakan ujian secara jujur. Jawaban Anda telah aman tersimpan di server.</p>
+          
+          <div class="result-stats" id="result-score-box">
+            <h4>Nilai Percobaan Ini:</h4>
+            <p class="score-display" id="student-score-val">00.00</p>
+          </div>
+
+          <div class="result-actions" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <button class="btn-primary" id="btn-retake-exam" onclick="retakeActiveExam()"><i class="fa-solid fa-rotate-left"></i> Kerjakan Ulang Ujian Ini</button>
+            <button class="btn-warning" id="btn-request-reset-exam" style="display:none;" onclick="requestResetExam()"><i class="fa-solid fa-key"></i> Minta Izin Ujian Ulang ke Guru</button>
+            <button class="btn-secondary" onclick="goToStudentDashboard()"><i class="fa-solid fa-house"></i> Kembali ke Dashboard Siswa</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODAL: CREATE EXAM ================= -->
+  <div id="modal-create-exam" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Buat Ujian Baru</h2>
+        <span class="close-modal" onclick="closeCreateExamModal()">&times;</span>
+      </div>
+      <form id="form-create-exam" onsubmit="handleCreateExam(event)">
+        <div class="form-group">
+          <label for="exam-title">Nama/Judul Ujian</label>
+          <input type="text" id="exam-title" placeholder="Contoh: Ulangan Harian Aljabar" required>
+        </div>
+        <div class="form-group">
+          <label for="exam-class">Pilih Kelas Sasaran</label>
+          <select id="exam-class-select" required>
+            <option value="" disabled selected>-- Pilih Kelas --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="exam-timer-type">Tipe Pengatur Waktu</label>
+          <select id="exam-timer-type" onchange="toggleTimerTypeInputs()" required style="width:100%; padding:10px; border-radius:var(--border-radius-md); border:1px solid var(--panel-border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+            <option value="duration" selected>Berdasarkan Durasi Mengerjakan (Mulai kapan saja)</option>
+            <option value="schedule">Berdasarkan Jadwal (Jam Mulai - Jam Selesai Spesifik)</option>
+          </select>
+        </div>
+        <div class="form-group" id="group-exam-duration">
+          <label for="exam-duration">Durasi Mengerjakan (Menit)</label>
+          <input type="number" id="exam-duration" placeholder="Contoh: 90" min="1" required>
+        </div>
+        <div id="container-schedule-inputs" style="display: none; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+          <div class="form-group">
+            <label for="exam-start-time">Waktu Mulai Ujian</label>
+            <input type="datetime-local" id="exam-start-time" style="width:100%; padding:10px; border-radius:var(--border-radius-md); border:1px solid var(--panel-border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+          </div>
+          <div class="form-group">
+            <label for="exam-end-time">Waktu Selesai Ujian</label>
+            <input type="datetime-local" id="exam-end-time" style="width:100%; padding:10px; border-radius:var(--border-radius-md); border:1px solid var(--panel-border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeCreateExamModal()">Batal</button>
+          <button type="submit" class="btn-primary">Buat Ujian <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: COPY-PASTE SOAL TEXT PARSER ================= -->
+  <div id="modal-copy-paste-questions" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>Salin & Tempel Soal Ujian (MS Word / Notepad)</h2>
+        <span class="close-modal" onclick="closeCopyPasteModal()">&times;</span>
+      </div>
+      <div style="margin-bottom: 15px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+        <p><strong style="color:var(--primary-color);">Petunjuk Format Penulisan:</strong></p>
+        <p>Gunakan nomor untuk pertanyaan, huruf A-D untuk opsi pilihan, dan akhiri dengan <code>Kunci: [A/B/C/D]</code>. Pisahkan tiap soal dengan satu baris kosong.</p>
+        <pre style="background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px; margin-top:5px; font-family:monospace; font-size:0.75rem; color:#fff;">
+1. Pertanyaan kesatu...
+A. Pilihan jawaban A
+B. Pilihan jawaban B
+C. Pilihan jawaban C
+D. Pilihan jawaban D
+Kunci: B
+
+2. Pertanyaan kedua...
+A. Pilihan A
+B. Pilihan B
+C. Pilihan C
+D. Pilihan D
+Kunci: A</pre>
+      </div>
+      <form onsubmit="handleProcessRawQuestions(event)">
+        <div class="form-group">
+          <label for="raw-questions-text">Tempel Teks Soal Di Sini</label>
+          <textarea id="raw-questions-text" rows="10" placeholder="Tempel soal dari file MS Word Anda di sini..." required style="font-family: monospace; font-size: 0.9rem;"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeCopyPasteModal()">Batal</button>
+          <button type="submit" class="btn-primary">Proses dan Tambahkan Soal <i class="fa-solid fa-wand-magic-sparkles"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: KOREKSI URAIAN (GRADING) ================= -->
+  <div id="modal-grading" class="modal">
+    <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h2 style="font-size: 1.3rem;"><i class="fa-solid fa-file-signature"></i> Koreksi Jawaban Uraian: <span id="grading-student-name" class="gradient-text">-</span></h2>
+        <span class="close-modal" onclick="closeGradingModal()">&times;</span>
+      </div>
+      <div id="grading-questions-container" style="flex: 1; overflow-y: auto; padding: 20px 0; display: flex; flex-direction: column; gap: 25px; max-height: 60vh;">
+        <!-- Dinamis -->
+      </div>
+      <div class="modal-actions" style="border-top: 1px solid var(--panel-border); padding-top: 15px; margin-top: 10px;">
+        <button type="button" class="btn-secondary" onclick="closeGradingModal()">Batal</button>
+        <button type="button" class="btn-primary" onclick="saveGradingResult()"><i class="fa-solid fa-save"></i> Simpan Nilai Uraian</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DIALOG MODAL: CUSTOM ALERT (NEW CONFIRMATION POPUP) ================= -->
+  <div id="custom-alert-modal" class="custom-modal">
+    <div class="custom-modal-content">
+      <div class="custom-modal-icon info" id="custom-alert-icon">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+      <h3 class="custom-modal-title" id="custom-alert-title">Informasi</h3>
+      <p class="custom-modal-message" id="custom-alert-message">Pesan informasi</p>
+      <div class="custom-modal-actions">
+        <button class="btn-primary btn-block" onclick="closeCustomAlert()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DIALOG MODAL: CUSTOM CONFIRM (NEW CONFIRMATION POPUP) ================= -->
+  <div id="custom-confirm-modal" class="custom-modal">
+    <div class="custom-modal-content">
+      <div class="custom-modal-icon warning" id="custom-confirm-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="custom-modal-title" id="custom-confirm-title">Konfirmasi</h3>
+      <p class="custom-modal-message" id="custom-confirm-message">Apakah Anda yakin?</p>
+      <div class="custom-modal-actions">
+        <button class="btn-secondary" id="btn-custom-confirm-cancel" onclick="closeCustomConfirm(false)">Batal</button>
+        <button class="btn-primary" id="btn-custom-confirm-ok" onclick="closeCustomConfirm(true)">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom JS -->
+  <script src="/app.js"></script>
+</body>
+</html>
